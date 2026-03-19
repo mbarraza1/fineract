@@ -140,6 +140,52 @@ public class SavingsAccountsApiResource {
         return toApiJsonSerializer.serialize(settings, products, SavingsApiSetConstants.SAVINGS_ACCOUNT_RESPONSE_DATA_PARAMETERS);
     }
 
+    @GET
+    @Path("birthday")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    @Operation(summary = "Retrieve savings accounts by client birthday", description = "Retrieves all savings accounts for clients with a specific birthday (month and day), regardless of year.\n\n"
+            + "Mandatory Fields: month, day (1-12 for month, 1-31 for day)\n\n"
+            + "Optional Fields: offset, limit, orderBy, sortOrder, sqlSearch, externalId\n\n"
+            + "Example Requests:\n" + "savingsaccounts/birthday?month=3&day=15\n"
+            + "savingsaccounts/birthday?month=3&day=15&limit=50&offset=0")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SavingsAccountsApiResourceSwagger.GetSavingsAccountsResponse.class))) })
+    public String retrieveBirthday(@Context final UriInfo uriInfo,
+            @QueryParam("month") @Parameter(description = "month (1-12)") final Integer month,
+            @QueryParam("day") @Parameter(description = "day (1-31)") final Integer day,
+            @QueryParam("sqlSearch") @Parameter(description = "sqlSearch") final String sqlSearch,
+            @QueryParam("externalId") @Parameter(description = "externalId") final String externalId,
+            @QueryParam("offset") @Parameter(description = "offset") final Integer offset,
+            @QueryParam("limit") @Parameter(description = "limit") final Integer limit,
+            @QueryParam("orderBy") @Parameter(description = "orderBy") final String orderBy,
+            @QueryParam("sortOrder") @Parameter(description = "sortOrder") final String sortOrder) {
+
+        context.authenticatedUser().validateHasReadPermission(SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME);
+
+        if (month == null || day == null) {
+            throw new UnrecognizedQueryParamException("month and day", "null",
+                    new Object[] { "month and day parameters are required" });
+        }
+
+        if (month < 1 || month > 12) {
+            throw new UnrecognizedQueryParamException("month", month.toString(),
+                    new Object[] { "Month must be between 1 and 12" });
+        }
+
+        if (day < 1 || day > 31) {
+            throw new UnrecognizedQueryParamException("day", day.toString(),
+                    new Object[] { "Day must be between 1 and 31" });
+        }
+
+        final SearchParameters searchParameters = SearchParameters.forSavings(sqlSearch, externalId, offset, limit, orderBy, sortOrder);
+
+        final Page<SavingsAccountData> products = savingsAccountReadPlatformService.retrieveBirthday(month, day, searchParameters);
+
+        final ApiRequestJsonSerializationSettings settings = apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return toApiJsonSerializer.serialize(settings, products, SavingsApiSetConstants.SAVINGS_ACCOUNT_RESPONSE_DATA_PARAMETERS);
+    }
+
     @POST
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })

@@ -17,7 +17,18 @@
  * under the License.
  */
 // TODO: this is work in progress, please follow FINERACT-1171
+
+
 buildscript {
+    configurations.all {
+        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+            if (details.requested.name == 'okhttp-digest') {
+                // We change the group AND the version to the one that is alive
+                details.useTarget 'io.github.rburgst:okhttp-digest:3.1.0'
+            }
+        }
+    }
+
     ext {
         jacocoVersion = '0.8.10'
         retrofitVersion = '2.9.0'
@@ -50,6 +61,7 @@ buildscript {
         npmRepository = 'https://npm.pkg.github.com'
     }
     repositories {
+        mavenCentral()
         maven { url 'https://plugins.gradle.org/m2/' }
     }
 
@@ -91,6 +103,15 @@ plugins {
     id "com.github.davidmc24.gradle.plugin.avro-base" version "1.7.1" apply false
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.name == 'okhttp-digest') {
+            // We change the group AND the version to the one that is alive
+            details.useTarget 'io.github.rburgst:okhttp-digest:3.1.0'
+        }
+    }
+}
+
 apply from: "${rootDir}/buildSrc/src/main/groovy/org.apache.fineract.release.gradle"
 
 description = '''\
@@ -110,6 +131,7 @@ allprojects  {
 
     repositories {
         mavenCentral()
+        maven { url 'https://plugins.gradle.org/m2/' }
     }
 
     apply plugin: 'com.adarshr.test-logger'
