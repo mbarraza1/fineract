@@ -68,4 +68,6 @@ public interface SavingsAccountReadPlatformService {
             Long maxSavingsId);
 
     List<SavingsAccountTransactionData> retrieveAllTransactionData(List<String> refNo);
+
+    Page<SavingsAccountData> retrieveBirthday(int month, int day, SearchParameters searchParameters);
 }

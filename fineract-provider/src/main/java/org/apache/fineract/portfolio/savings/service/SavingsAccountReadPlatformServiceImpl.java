@@ -249,6 +249,70 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
     }
 
     @Override
+    public Page<SavingsAccountData> retrieveBirthday(final int month, final int day, final SearchParameters searchParameters) {
+
+        final AppUser currentUser = this.context.authenticatedUser();
+        final String hierarchy = currentUser.getOffice().getHierarchy();
+        final String hierarchySearchString = hierarchy + "%";
+
+        final StringBuilder sqlBuilder = new StringBuilder(200);
+        sqlBuilder.append("select " + sqlGenerator.calcFoundRows() + " ");
+        sqlBuilder.append(this.savingAccountMapper.schema());
+
+        sqlBuilder.append(" join m_office o on o.id = c.office_id");
+        sqlBuilder.append(" where o.hierarchy like ?");
+        sqlBuilder.append(" and c.date_of_birth is not null");
+        sqlBuilder.append(" and MONTH(c.date_of_birth) = ?");
+        sqlBuilder.append(" and DAY(c.date_of_birth) = ?");
+
+        final Object[] objectArray = new Object[3];
+        objectArray[0] = hierarchySearchString;
+        objectArray[1] = month;
+        objectArray[2] = day;
+        int arrayPos = 3;
+
+        if (searchParameters != null) {
+            String sqlQueryCriteria = searchParameters.getSqlSearch();
+            if (StringUtils.isNotBlank(sqlQueryCriteria)) {
+                sqlQueryCriteria = sqlQueryCriteria.replaceAll("accountNo", "sa.account_no");
+                this.columnValidator.validateSqlInjection(sqlBuilder.toString(), sqlQueryCriteria);
+                sqlBuilder.append(" and (").append(sqlQueryCriteria).append(")");
+            }
+
+            if (StringUtils.isNotBlank(searchParameters.getExternalId())) {
+                sqlBuilder.append(" and sa.external_id = ?");
+                objectArray[arrayPos] = searchParameters.getExternalId();
+                arrayPos = arrayPos + 1;
+            }
+            if (searchParameters.getOfficeId() != null) {
+                sqlBuilder.append(" and c.office_id = ?");
+                objectArray[arrayPos] = searchParameters.getOfficeId();
+                arrayPos = arrayPos + 1;
+            }
+            if (searchParameters.isOrderByRequested()) {
+                sqlBuilder.append(" order by ").append(searchParameters.getOrderBy());
+                this.columnValidator.validateSqlInjection(sqlBuilder.toString(), searchParameters.getOrderBy());
+
+                if (searchParameters.isSortOrderProvided()) {
+                    sqlBuilder.append(' ').append(searchParameters.getSortOrder());
+                    this.columnValidator.validateSqlInjection(sqlBuilder.toString(), searchParameters.getSortOrder());
+                }
+            }
+
+            if (searchParameters.isLimited()) {
+                sqlBuilder.append(" ");
+                if (searchParameters.isOffset()) {
+                    sqlBuilder.append(sqlGenerator.limit(searchParameters.getLimit(), searchParameters.getOffset()));
+                } else {
+                    sqlBuilder.append(sqlGenerator.limit(searchParameters.getLimit()));
+                }
+            }
+        }
+        final Object[] finalObjectArray = Arrays.copyOf(objectArray, arrayPos);
+        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlBuilder.toString(), finalObjectArray, this.savingAccountMapper);
+    }
+
+    @Override
     public List<SavingsAccountTransactionData> retrieveAllTransactionData(final List<String> refNo) throws DataAccessException {
         String inSql = String.join(",", Collections.nCopies(refNo.size(), "?"));
         String sql = "select " + this.savingsAccountTransactionsForBatchMapper.schema() + " where tr.ref_no in (%s)";
