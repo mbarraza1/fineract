@@ -23,7 +23,6 @@ buildscript {
     configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
             if (details.requested.name == 'okhttp-digest') {
-                // We change the group AND the version to the one that is alive
                 details.useTarget 'io.github.rburgst:okhttp-digest:3.1.0'
             }
         }
@@ -106,7 +105,6 @@ plugins {
 configurations.all {
     resolutionStrategy.eachDependency { DependencyResolveDetails details ->
         if (details.requested.name == 'okhttp-digest') {
-            // We change the group AND the version to the one that is alive
             details.useTarget 'io.github.rburgst:okhttp-digest:3.1.0'
         }
     }
